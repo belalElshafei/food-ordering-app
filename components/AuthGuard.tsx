@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useAuthStore } from '@/store/authStore';
@@ -15,15 +15,20 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const locale = params.locale as string;
   const { data: session, status } = useSession();
   const { isLoggedIn } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
 
   const isAuthenticated = !!session || isLoggedIn;
 
   useEffect(() => {
-    if (status === 'loading') return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || status === 'loading') return;
     if (!isAuthenticated) {
       router.replace(`/${locale}/login`);
     }
-  }, [isAuthenticated, status, router, locale]);
+  }, [isAuthenticated, status, router, locale, mounted]);
 
   if (status === 'loading') {
     return (

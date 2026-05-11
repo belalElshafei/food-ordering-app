@@ -33,11 +33,18 @@ export default function LoginPage() {
   const { status } = useSession();
   const { isLoggedIn } = useAuthStore();
  
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (status === 'authenticated' || isLoggedIn) {
       router.push(`/${locale}`);
     }
-  }, [status, isLoggedIn, locale, router]);
+  }, [status, isLoggedIn, locale, router, mounted]);
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '', confirm: '' });
