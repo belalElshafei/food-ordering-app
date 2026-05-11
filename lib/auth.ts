@@ -1,6 +1,9 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import bcrypt from 'bcryptjs';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -16,23 +19,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        // Client-side localStorage auth is handled in the login page
-        // This server-side authorize just validates the token passed from client
         if (!credentials?.email || !credentials?.password) return null;
-
-        // The actual password comparison happens client-side via authUtils
-        // Here we trust the client has verified and passes a special token
-        const tokenStr = credentials.password as string;
-        if (tokenStr.startsWith('VERIFIED:')) {
-          const userData = JSON.parse(tokenStr.replace('VERIFIED:', ''));
+ 
+        try {
+          await dbConnect();
+          const user = await User.findOne({ email: credentials.email });
+ 
+          if (!user) return null;
+ 
+          const isPasswordCorrect = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
+ 
+          if (!isPasswordCorrect) return null;
+ 
           return {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            image: userData.image || null,
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            image: user.image || null,
           };
+        } catch (error) {
+          console.error('Auth error:', error);
+          return null;
         }
-        return null;
       },
     }),
   ],

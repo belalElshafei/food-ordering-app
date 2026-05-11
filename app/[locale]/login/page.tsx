@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { signIn, useSession } from 'next-auth/react';
 import Header from '@/components/Header';
 import PasswordStrength from '@/components/PasswordStrength';
@@ -65,25 +65,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const users = getStoredUsers();
-      const found = users.find((u) => u.email.toLowerCase() === loginForm.email.toLowerCase());
-      if (!found) { setErrors({ email: t('errors.invalidCredentials') }); setLoading(false); return; }
-      const ok = await comparePassword(loginForm.password, found.password);
-      if (!ok) { setErrors({ password: t('errors.invalidCredentials') }); setLoading(false); return; }
-
-      const userData = { id: found.id, name: found.name, email: found.email };
-      setUser(userData);
-      const tokenPayload = JSON.stringify(userData);
-      await signIn('credentials', {
-        email: found.email,
-        password: `VERIFIED:${tokenPayload}`,
+      const result = await signIn('credentials', {
+        email: loginForm.email,
+        password: loginForm.password,
         redirect: false,
       });
-      showToast(t('welcomeBack'));
-      router.refresh();
-      router.push(callbackUrl);
-    } catch {
-      setErrors({ email: t('errors.generic') });
+ 
+      if (result?.error) {
+        setErrors({ general: t('errors.invalidCredentials') });
+      } else {
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+        if (sessionData?.user) {
+          setUser({
+            id: sessionData.user.id,
+            name: sessionData.user.name,
+            email: sessionData.user.email,
+          });
+        }
+        router.refresh();
+        router.push(callbackUrl);
+      }
+    } catch (err) {
+      setErrors({ general: t('errors.somethingWentWrong') });
     } finally {
       setLoading(false);
     }
@@ -92,39 +96,60 @@ export default function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!regForm.name) errs.name = t('errors.nameRequired');
-    if (!regForm.email) errs.email = t('errors.emailRequired');
-    else if (!/\S+@\S+\.\S+/.test(regForm.email)) errs.email = t('errors.emailInvalid');
-    if (!regForm.password) errs.password = t('errors.passwordRequired');
-    else if (regForm.password.length < 8) errs.password = t('errors.passwordLength');
+    if (!regForm.name) errs.regName = t('errors.nameRequired');
+    if (!regForm.email) errs.regEmail = t('errors.emailRequired');
+    else if (!/\S+@\S+\.\S+/.test(regForm.email)) errs.regEmail = t('errors.emailInvalid');
+    if (!regForm.password) errs.regPassword = t('errors.passwordRequired');
+    else if (regForm.password.length < 8) errs.regPassword = t('errors.passwordLength');
     if (regForm.password !== regForm.confirm) errs.confirm = t('errors.passwordMatch');
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setLoading(true);
-
+ 
     try {
-      const users = getStoredUsers();
-      if (users.find((u) => u.email.toLowerCase() === regForm.email.toLowerCase())) {
-        setErrors({ email: t('errors.emailExists') }); setLoading(false); return;
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: regForm.name,
+          email: regForm.email,
+          password: regForm.password,
+        }),
+      });
+ 
+      const data = await res.json();
+ 
+      if (!res.ok) {
+        setErrors({ regEmail: data.error || t('errors.somethingWentWrong') });
+        return;
       }
-      const hashed = await hashPassword(regForm.password);
-      const newUser: StoredUser = {
-        id: `user_${Date.now()}`, name: regForm.name, email: regForm.email,
-        password: hashed, createdAt: new Date().toISOString(),
-      };
-      saveStoredUsers([...users, newUser]);
-      const userData = { id: newUser.id, name: newUser.name, email: newUser.email };
-      setUser(userData);
-      await signIn('credentials', {
-        email: newUser.email,
-        password: `VERIFIED:${JSON.stringify(userData)}`,
+ 
+      showToast(t('success.accountCreated'));
+      
+      // Auto-login after registration
+      const result = await signIn('credentials', {
+        email: regForm.email,
+        password: regForm.password,
         redirect: false,
       });
-      showToast(t('accountCreated'));
-      router.refresh();
-      router.push(callbackUrl);
-    } catch {
-      setErrors({ email: t('errors.generic') });
+
+      if (!result?.error) {
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+        if (sessionData?.user) {
+          setUser({
+            id: sessionData.user.id,
+            name: sessionData.user.name,
+            email: sessionData.user.email,
+          });
+        }
+        router.refresh();
+        router.push(callbackUrl);
+      } else {
+        setTab('login'); // Fallback to login tab if auto-login fails
+      }
+    } catch (err) {
+      setErrors({ general: t('errors.somethingWentWrong') });
     } finally {
       setLoading(false);
     }
@@ -166,6 +191,15 @@ export default function LoginPage() {
               {tab === 'login' ? (
                 <motion.form key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }} onSubmit={handleLogin} className="space-y-5">
+                  
+                  {errors.general && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                      className="p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2 text-red-600 text-sm">
+                      <AlertCircle size={16} />
+                      {errors.general}
+                    </motion.div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-semibold text-charcoal-600 mb-2">{t('email')}</label>
                     <div className="input-icon-wrapper">
