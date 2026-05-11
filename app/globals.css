@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-playfair: 'Playfair Display', Georgia, serif;
+  --font-dm-sans: 'DM Sans', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-dm-sans);
+  background-color: #FAF3E0;
+  color: #1C1C1C;
+  min-height: 100vh;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF3E0;
+}
+::-webkit-scrollbar-thumb {
+  background: #8B3A2A;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4A017;
+}
+
+/* RTL support */
+[dir='rtl'] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #D4A017;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth transitions */
+a,
+button {
+  transition: all 0.2s ease;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(250, 243, 224, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 160, 23, 0.15);
+}
+
+.glass-dark {
+  background: rgba(28, 28, 28, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 160, 23, 0.15);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #D4A017 0%, #8B3A2A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button variants */
+.btn-primary {
+  @apply bg-terracotta-500 text-cream-100 font-body font-semibold px-6 py-3 rounded-xl
+    hover:bg-terracotta-600 active:scale-95 transition-all duration-200
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-400;
+}
+
+.btn-secondary {
+  @apply border-2 border-terracotta-500 text-terracotta-500 font-body font-semibold px-6 py-3 rounded-xl
+    hover:bg-terracotta-500 hover:text-cream-100 active:scale-95 transition-all duration-200;
+}
+
+.btn-gold {
+  @apply bg-saffron-400 text-charcoal-700 font-body font-semibold px-6 py-3 rounded-xl
+    hover:bg-saffron-500 active:scale-95 transition-all duration-200;
+}
+
+/* Card */
+.menu-card {
+  @apply bg-white rounded-2xl overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300;
+}
+
+/* Input */
+.form-input {
+  @apply w-full px-4 py-3 rounded-xl border border-charcoal-200 bg-white
+    font-body text-charcoal-700 placeholder-charcoal-300
+    focus:outline-none focus:border-terracotta-500 focus:ring-2 focus:ring-terracotta-500/20
+    transition-all duration-200;
+}
+
+.form-input-error {
+  @apply border-red-400 focus:border-red-400 focus:ring-red-400/20;
+}
+
+/* Icon alignment fix for inputs */
+.input-icon-wrapper {
+  @apply relative flex items-center;
+}
+
+.input-icon {
+  @apply absolute start-3.5 pointer-events-none text-charcoal-300;
+  /* Use flex-basis or fixed size if needed, but absolute is fine if we have enough padding */
+}
+
+.input-with-icon {
+  @apply ps-11;
+}
+
+.input-with-icon-end {
+  @apply pe-11;
+}
+
+.input-icon-end {
+  @apply absolute end-3.5 cursor-pointer text-charcoal-300 hover:text-charcoal-500 transition-colors;
+}
+
+/* Badge */
+.status-badge {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+/* Page container */
+.page-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Section */
+.section-padding {
+  @apply py-16 md:py-24;
+}
+
+/* Divider */
+.divider {
+  @apply border-t border-charcoal-200 my-6;
+}
+
+/* Overlay */
+.overlay {
+  @apply fixed inset-0 bg-charcoal-700/60 backdrop-blur-sm z-40;
+}
+
+/* Progress ring animation */
+@keyframes progressFill {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0e8d0 25%, #faf3e0 50%, #f0e8d0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
