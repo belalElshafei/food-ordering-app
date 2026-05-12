@@ -1,19 +1,12 @@
-import NextAuth from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-// import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    /*
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-    }),
-    */
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -22,20 +15,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
- 
+        
         try {
           await dbConnect();
           const user = await User.findOne({ email: credentials.email });
- 
+          
           if (!user) return null;
- 
+          
           const isPasswordCorrect = await bcrypt.compare(
             credentials.password as string,
             user.password
           );
- 
+          
           if (!isPasswordCorrect) return null;
- 
+          
           return {
             id: user._id.toString(),
             name: user.name,
@@ -62,9 +55,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
+        (session.user as any).id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
         session.user.image = token.picture as string;
       }
       return session;
@@ -73,4 +66,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/en/login',
   },
-});
+};
+
+export default NextAuth(authOptions);
