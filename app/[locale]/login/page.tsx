@@ -240,6 +240,7 @@ export default function LoginPage() {
                     {t('signIn')}
                   </button>
 
+                  {/* 
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-px bg-charcoal-200" />
                     <span className="text-xs text-charcoal-400">{t('orWith')}</span>
@@ -256,6 +257,7 @@ export default function LoginPage() {
                     </svg>
                     {t('google')}
                   </button>
+                  */}
 
                   <p className="text-center text-sm text-charcoal-400">
                     {t('noAccount')}{' '}
